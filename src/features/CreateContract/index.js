@@ -1,17 +1,12 @@
 import React from 'react';
 import { connect } from 'react-redux'
 
-import { sha256, bufferText } from '.././helpers'
 import * as actions from './actions'
-import { getArbitersVersion, getParties } from './selectors'
+import { getArbitersVersion, getParties, getCryptoID, getHashCryptoID } from './selectors'
 
 class CreateContract extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {
-            CryptoID: '',
-            hashCryptoID: '',
-        };
         this.handleChange = this.handleChange.bind(this);
         this.handleInputChange = this.handleInputChange.bind(this);
     }
@@ -20,28 +15,29 @@ class CreateContract extends React.Component {
         const name = e.target.name;
         const id = parseInt(e.target.id, 10);
         const value = e.target.value;
-        this.props.handleChange({name,id,value});
+
+        const { dispatch } = this.props;
+        dispatch(actions.handleChange({
+            name,
+            id,
+            value
+        }));
+
+        dispatch(actions.updateHash());
     };
 
-    handleInputChange(event) {
-        const target = event.target;
+    handleInputChange = (e) => {
+        const target = e.target;
         const value = target.value;
         const name = target.name;
-        this.props.handleInputChange({
-            [name]: value
-        });
-    }
 
-    componentDidUpdate(_,prevState){
-        if (prevState.parties !== this.state.parties || prevState.arbitersVersion !== this.state.arbitersVersion) {
-            const CryptoID = `${this.state.parties.map(party => party.address).sort().join('.')}.${this.state.arbitersVersion}`;
-            sha256(bufferText(CryptoID)).then(hashCryptoID => {
-                this.setState({
-                    hashCryptoID,
-                    CryptoID,
-                });
-            });
-        }
+        const { dispatch } = this.props;
+        dispatch(actions.handleInputChange({
+            name,
+            value,
+        }));
+
+        dispatch(actions.updateHash());
     }
 
     addParty = () => {
@@ -49,7 +45,7 @@ class CreateContract extends React.Component {
     }
 
     render() {
-        const { arbitersVersion, parties } = this.props;
+        const { arbitersVersion, parties, CryptoID, hashCryptoID } = this.props;
         return (
             <div>
                     <p>Create Contract</p>
@@ -62,6 +58,7 @@ class CreateContract extends React.Component {
                                     id={idx}
                                     value={party.address}
                                     onChange={this.handleChange}
+                                    placeholder="Bitcoin address"
                                 />
                                 <input
                                     type="text"
@@ -69,6 +66,7 @@ class CreateContract extends React.Component {
                                     id={idx}
                                     value={party.pubKey}
                                     onChange={this.handleChange}
+                                    placeholder="PGP key"
                                 />
                             </div>
                         )
@@ -81,8 +79,8 @@ class CreateContract extends React.Component {
                         onChange={this.handleInputChange}
                     />
                     <button onClick={this.addParty}>Add Party</button>
-                    <p>{this.state.hashCryptoID}</p>
-                    <p>{this.state.CryptoID}</p>
+                    <p>{CryptoID && CryptoID}</p>
+                    <p>{hashCryptoID && hashCryptoID}</p>
             </div>
         );
     }
@@ -92,9 +90,13 @@ class CreateContract extends React.Component {
 export default connect((state) => {
     const arbitersVersion = getArbitersVersion(state);
     const parties = getParties(state);
+    const CryptoID = getCryptoID(state);
+    const hashCryptoID = getHashCryptoID(state);
 
     return {
         arbitersVersion,
-        parties
+        parties,
+        CryptoID,
+        hashCryptoID,
     };
-  }, actions)(CreateContract);
+  })(CreateContract);

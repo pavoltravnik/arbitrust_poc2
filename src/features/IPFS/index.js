@@ -1,6 +1,7 @@
 import React from 'react';
+import { connect } from 'react-redux';
 
-export class IPFS extends React.Component {
+class IPFS extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -25,8 +26,12 @@ export class IPFS extends React.Component {
         })
         .then(response => response.json())
         .catch(error => console.error('Error:', error))
-        .then(response => console.log('Success:', JSON.stringify(response)));
-
+        .then(response => {
+          response = JSON.parse(response);
+          this.setState({
+            documentHash: response.Hash,
+          });
+        });
       } else {
         return;
       }
@@ -51,7 +56,18 @@ export class IPFS extends React.Component {
           <input type="file" accept=".pdf" onChange={this.handleAttachmentChange}/>
           <button onClick={this.addToIPFS}>Upload to IPFS</button>
           <button onClick={this.addToIPFS}>Add OP_RETURN</button>
+          {this.state.documentHash &&
+            <div>
+              <br />
+              <a href={`https://ipfs.io/ipfs/${this.state.documentHash}`} target="_blank" rel="noopener noreferrer">Open document</a>
+              <p>Link to file: https://ipfs.io/ipfs/{this.state.documentHash}</p>
+              <p>If you are looking for alternative IPFS gateways, you can find them here:</p>
+              <a href="https://ipfs.github.io/public-gateway-checker/" target="_blank" rel="noopener noreferrer">Public IPFS gateway checker</a>
+            </div>
+          }
         </div>
       );
     }
 }
+
+export default connect(null, null)(IPFS);
